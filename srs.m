@@ -1,14 +1,23 @@
 classdef srs
-    %SRS Summary of this class goes here
-    %   Constructor function: 'SRS=srs(acc, StaF, Q)';
-    %   Input 'acc' must be a object.
-    
+    %SRS A collection of methods dealing with shock response matrix.
+    %
+    %SRS Properties:
+    %   fn - Natural frequencies of SDOF oscillators StaF - The starting
+    %   frequency for SRS Q - Quality factor t - Time column resp - Shock
+    %   response matrix
+    %
+    %SRS Methods:
+    %   srs - Constructor method to creat a SRS object. plot - An overload
+    %   plot function for SRS object. contourf - Shock response contour.
+    %   svd - Extract shock response infimum by SVD. mdof - Calculating
+    %   shock response using response spectrum analysis methods.
+    %
     properties
-        fn
-        StaF
-        Q
-        t
-        resp
+        fn % Natural frequencies of SDOF oscillators
+        StaF % The starting frequency for SRS
+        Q % Quality factor
+        t % Time column
+        resp % Shock response matrix
     end
     properties (Dependent)
         maximaxSRS
@@ -24,7 +33,9 @@ classdef srs
             value=SRS.t(I);
         end
         function SRS=srs(fn, StaF, Q, t, resp)
-            
+            %SRS=SRS(fn, StaF, Q, t, resp) construct a SRS objec. This
+            %function is normally called by Acc.srs function. See class Acc
+            %for more details.
             SRS.fn=fn';
             SRS.StaF=StaF;
             SRS.Q = Q;
@@ -32,6 +43,9 @@ classdef srs
             SRS.resp=resp;
         end
         function plot(SRS, varargin)
+            % PLOT(SRS) plot the common absolute maximum SRS. If there is a
+            % second input, this function will plot both positive and
+            % negative SRS.
             figure;
             plot(SRS.fn, SRS.maximaxSRS);
             if nargin==2
@@ -47,10 +61,11 @@ classdef srs
         end
         
         function contourf(SRS)
+            %CONTOURF(SRS) shows the shock response countour.
             [X,Y]=meshgrid(SRS.t,SRS.fn);
             figure;
             resp=SRS.resp; %#ok<*PROP>
-
+            
             %cmin=log10(SRS.StaF);
             cmin=log10(min(SRS.maximaxSRS));
             respLog=log10(abs(resp));
@@ -68,9 +83,11 @@ classdef srs
             xlabel('Time (s)');
             ylabel('Natural Frequency (Hz)');
         end
-       
+        
         function SRS=svd(SRS0,k)
-            % 'k' is the order in SSM method.
+            %SRS=SVD(SRS0,k) extract the Shock Response Infimum from a
+            %shock response matrix. 'k' is the order in SSI method, which
+            %is '1' by default.
             [U,S,V] = svd(abs(SRS0.resp'));
             x=diag(S);
             cost=(norm(x(2:end))/norm(x))^2;
@@ -79,39 +96,42 @@ classdef srs
             resp=U(:,k)*S(k,k)*V(:,k)';
             SRS=SRS0;
             SRS.resp=resp';
-        if nargout==0
-            L=abs(20*log10(SRS0.maximaxSRS./SRS.maximaxSRS));
-            
-            SRS.plot;
-            hold on;
-            plot(SRS.fn, SRS0.maximaxSRS);
-            yyaxis right;
-            plot(SRS.fn,L,'--','LineWidth',1);
-            set(gca,{'ycolor'},{'k'});
-            ylabel('Ratio (dB)');
-            
-            lgd =legend('SSI','SRS','Margin');
-            lgd.Location='northwest';
-            annotation('textbox',[0.68,0.18,0.186,0.058],'String',['L = ',num2str(mean(L)), ' dB'],'FitBoxToText','on');
-            
-            figure;
-            for i=1:6
-                subplot(5,2,i);
-                plot(SRS0.t, -U(:,i)/max(abs(U(:,i))));
-                xlabel({'Time, s'});
-                ylabel({'Acceleration, m/s^2'});
-                ylim([-1, 1]);
-                legend(['\bf u_{',num2str(i),'}/|| \bf u_{',num2str(i),'}||_\infty']);
-                set(gca,'GridLineStyle','--','XGrid','on','YGrid','on');
+            if nargout==0
+                L=abs(20*log10(SRS0.maximaxSRS./SRS.maximaxSRS));
+                
+                SRS.plot;
+                hold on;
+                plot(SRS.fn, SRS0.maximaxSRS);
+                yyaxis right;
+                plot(SRS.fn,L,'--','LineWidth',1);
+                set(gca,{'ycolor'},{'k'});
+                ylabel('Ratio (dB)');
+                
+                lgd =legend('SSI','SRS','Margin');
+                lgd.Location='northwest';
+                annotation('textbox',[0.68,0.18,0.186,0.058],'String',['L = ',num2str(mean(L)), ' dB'],'FitBoxToText','on');
+                
+                figure;
+                for i=1:6
+                    subplot(5,2,i);
+                    plot(SRS0.t, -U(:,i)/max(abs(U(:,i))));
+                    xlabel({'Time, s'});
+                    ylabel({'Acceleration, m/s^2'});
+                    ylim([-1, 1]);
+                    legend(['\bf u_{',num2str(i),'}/|| \bf u_{',num2str(i),'}||_\infty']);
+                    set(gca,'GridLineStyle','--','XGrid','on','YGrid','on');
+                end
+                subplot(5,2,1);
+                legend('\bf u_{ssi}');
             end
-            subplot(5,2,1);
-            legend('\bf u_{ssi}');
-        end
         end
         
         function [aM, aN]=mdof(SRS, MI)
-            %MI is the modal information matrix with original sign, where MI(:,1) is natural
-            %frequency, MI(:,1) is participation factor.
+            %[aM, aN]=MDOF(SRS, MI) calculates shock response using
+            %response spectrum analysis methods. MI is the modal
+            %information matrix with original sign, where MI(:,1) is
+            %natural frequency, MI(:,1) is participation factor; and
+            %MI(:,3) is mode shap.
             x=MI(:,2).*MI(:,3);
             [X,Y]=meshgrid(SRS.fn, SRS.t);
             [Xq,Yq]=meshgrid(MI(:,1), SRS.t);
@@ -134,7 +154,7 @@ classdef srs
             yn1=n1'*abs(x);
             disp(['Absolute maximum response by n1 is ', num2str(yn1)]);
         end
-       
+        
         
     end
     
