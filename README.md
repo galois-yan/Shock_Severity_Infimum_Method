@@ -97,4 +97,4 @@ legend('Mx','Nx','N1x');
 The code in SRS computation is partly based on the source code of the Vibrationdata Matlab Signal Analysis & Structural Dynamics Package provided by Tom Irvine.
 
 ## Contact
-Feel free to contact me at [yinzhong.yan@manchester.ac.uk](mailto:yinzhong.yan@manchester.ac.uk).
+Feel free to contact me at [yinzhong.yan@nwpu.edu.cn](mailto:yinzhong.yan@nwpu.edu.cn).
